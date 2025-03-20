@@ -138,4 +138,12 @@ SELECT
 	e.HIRE_DATE ,
 	ADD_MONTHS(e.HIRE_DATE, 120)
 FROM
-	EMPLOYEES e ;
+	EMPLOYEES e;
+
+-- 회사 내의 최대 연봉과 최소 연봉의 차이 조회
+SELECT (MAX(e.SALARY) - MIN(e.SALARY)) * 12
+FROM EMPLOYEES e;
+
+-- 매니저로 근무하는 사원들 숫자 조회
+SELECT COUNT(DISTINCT e.MANAGER_ID )
+FROM EMPLOYEES e;

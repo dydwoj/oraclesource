@@ -329,7 +329,19 @@ SELECT e.EMPNO, e.ENAME, e.SAL, e.DEPTNO FROM EMP e WHERE e.DEPTNO = 10;
  				TRIM(삭제옵션(선택사항), 삭제할 문자(선택사항), FROM 원본 문자열(필수))
  				LTRIM() : 왼쪽 제거
  				RTRIM() : 오른쪽 제거
+ 			8) 데이터 공간을 특정 문자로 채우기
+ 				LPAD(데이터, 데이터 자릿수, 채울 문자) : 왼쪽에 채울건지
+ 				RPAD() : 오른쪽에 채울건지
 */
+-- Oracle => 10자리로 표현
+SELECT
+	'Oracle',
+	LPAD('Oracle', 10, '#'),
+	RPAD('Oracle', 10, '*'),
+	LPAD('Oracle', 10),
+	RPAD('Oracle', 10)
+FROM
+	DUAL;
 
 -- 사원이름을 대문자, 소문자, 첫문자만 대문자로 변경
 SELECT e.ENAME, UPPER(e.ENAME), LOWER(e.ENAME), INITCAP(e.ENAME)
@@ -533,3 +545,282 @@ SELECT
 	TO_CHAR(SYSDATE, 'HH:MI:SS PM')
 FROM
 	DUAL;
+
+-- 9 : 숫자 한자리를 의미
+-- 0 : 숫자 한자리를 의미(빈자리를 0으로 채움)
+SELECT e.SAL, TO_CHAR(e.sal, '$999,999'), TO_CHAR(e.sal, '$000,999,999')
+FROM EMP e; 
+
+
+-- 문자열 데이터와 숫자 데이터 연산
+SELECT 1300-'1500', 1300 + '1500'
+FROM dual;
+
+SELECT '1300'-'1500'
+FROM dual;
+
+-- ORA-01722: 수치가 부적합합니다
+SELECT '1,300'-'1,500'
+FROM dual;
+
+
+-- TO_NUMBER('문자열데이터','인식할숫자형태')
+SELECT TO_NUMBER('1,300','999,999') - TO_NUMBER('1,500','999,999')
+FROM dual;
+
+-- TO_DATE() : 문자열데이터 => 날짜형식으로 변경
+SELECT
+	TO_DATE('2025-03-20', 'YYYY-MM-DD') AS DATE1,
+	TO_DATE('40270320', 'YYYY/MM/DD') AS DATE2
+FROM
+	DUAL;
+
+
+-- NULL
+-- 산술연산이나 비교연산자(IS NULL OR IS NOT NULL)가 제대로 수행되지 않음
+-- 1) NVL(널여부를 검사할 데이터,널일때 반환할데이터)
+-- 2) NVL2(널여부를 검사할 데이터,널이아닐때 반환할 데이터,널일때 반환할데이터)
+
+SELECT e.EMPNO, e.ENAME, e.sal, e.comm, e.sal+e.comm,  NVL(e.comm, 0), e.sal + nvl(e.comm,0)
+FROM EMP e;
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.sal,
+	e.comm,
+	e.sal + e.comm,
+	NVL2(e.comm, 'O', 'X'),
+	NVL2(e.comm, e.sal * 12 + e.COMM, e.SAL*12) AS 연봉
+FROM
+	EMP e;
+
+-- 자바의 if, switch 구문과 유사
+-- DECODE
+-- DECODE(검사대상이 될 데이터, 
+--        조건1, 조건1 만족시 반환할 결과,
+--        조건2, 조건2 만족시 반환할 결과,
+--        조건1~조건n 일치하지 않을때 반환할 결과
+-- )
+-- CASE
+-- CASE 검사대상이 될 데이터 
+--     WHEN  조건1 THEN 조건1 만족시 반환할 결과
+--     WHEN  조건2 THEN 조건2 만족시 반환할 결과
+--     ELSE  조건1~조건n 일치하지 않을때 반환할 결과
+-- END
+
+-- 직책이 MANAGER 인 사원은 급여의 10% 인상
+-- 직책이 SALESMAN 인 사원은 급여의 5% 인상
+-- 직책이 ANALYST 인 사원은 동결
+-- 나머지는 3% 인상
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	DECODE(e.job, 'MANAGER', e.SAL * 1.1,
+	'SALESMAN', e.SAL * 1.05,
+	'ANALYST', e.SAL,
+	e.SAL * 1.03
+	) AS upsal
+FROM
+	EMP e;
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	CASE
+		e.job
+	 WHEN 'MANAGER' THEN e.SAL * 1.1
+		WHEN 'SALESMAN' THEN e.SAL * 1.05
+		WHEN 'ANALYST' THEN e.SAL
+		ELSE e.SAL * 1.03
+	END AS upsal
+FROM
+	EMP e;
+
+-- COMM NULL 인 경우 '해당사항 없음'
+-- COMM 0 인 경우 '수당없음'
+-- COMM > 0 인 경우 '수당' : 800
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	CASE
+	 WHEN e.COMM IS NULL THEN '해당사항 없음'
+		WHEN e.COMM = 0 THEN '수당 없음'
+		WHEN e.COMM > 0 THEN '수당 : ' || e.COMM 
+	END AS COMM_TEXT
+FROM
+	EMP e;
+
+-- [실습]
+-- 1. EMPNO 7369 => 73**, ENAME SMITH => S****
+-- EMPNO, 마스킹 EMPNO, ENAME, 마스킹처리 ENAME
+-- 내꺼
+SELECT
+	e.EMPNO ,
+	SUBSTR(e.EMPNO, 1, 2) || '**' AS MASKING_EMPNO,
+	e.ENAME ,
+	SUBSTR(e.ENAME, 1, 1) || '****' AS MASKING_ENAME
+FROM
+	EMP e;
+
+SELECT
+	e.EMPNO ,
+	RPAD(SUBSTR(e.EMPNO, 1, 2), LENGTH(e.EMPNO), '*') AS MASKING_EMPNO,
+	e.ENAME ,
+	RPAD(SUBSTR(e.ENAME, 1, 1), LENGTH(e.ENAME), '*') AS MASKING_ENAME
+FROM
+	EMP e;
+
+-- 강사님꺼
+SELECT
+	e.EMPNO ,
+	REPLACE(e.EMPNO ,SUBSTR(e.EMPNO, 3), '**') AS MASKING_EMPNO,
+	e.ENAME ,
+	REPLACE(e.ENAME  ,SUBSTR(e.ENAME , 2), '****') AS MASKING_ENAME
+FROM
+	EMP e;
+
+-- 2. EMP 테이블에서 사원의 월 평균 근무일수는 21일이다.
+-- 하루 근무시간을 8시간으로 보았을 때 사원의 하루급여 (DAY_PAY)와 시급(TIME_PAY)를
+-- 계산하여 출력한다. (단, 하루급여는 소수 셋째자리에서 버리고, 시급은 둘째자리에서 반올림)
+-- 출력형태) EMPNO, ENAME, SAL, DAY_PAY, TIME_PAY
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.SAL,
+	TRUNC(e.SAL / 21, 2) AS DAY_PAY,
+	ROUND(e.SAL / 168, 1) AS TIME_PAY
+FROM
+	EMP e;
+
+-- 3. 입사일을 기준으로 3개월이 지난 후 첫 월요일에 정직원이 된다.
+-- 사원이 정직원이 되는 날짜(R_JOB)을 YYYY-MM-DD 형식으로 출력한다.
+-- 단, 추가수당이 없는 사원의 추가수당은 N/A 로 출력
+-- EMPNO, ENAME, HIREDATE, R_JOB, COMM
+
+-- 내꺼
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.HIREDATE,
+	TO_CHAR(NEXT_DAY(ADD_MONTHS(e.HIREDATE, 3), '월요일'), 'YYYY-MM-DD') AS R_JOB,
+	CASE
+		WHEN e.COMM IS NULL THEN 'N/A'
+		ELSE TO_CHAR(e.COMM)
+		END AS COMM
+	FROM
+		EMP e;
+
+-- 강사님꺼
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.HIREDATE,
+	TO_CHAR(NEXT_DAY(ADD_MONTHS(e.HIREDATE, 3), '월요일'), 'YYYY-MM-DD') AS R_JOB,
+	NVL(TO_CHAR(e.COMM), 'N/A') AS COMM
+FROM
+	EMP e;
+
+-- 4. 직속상관의 사원번호가 없을때 : 0000
+-- 직속상관의 사원번호 앞 두자리가 75일 때 : 5555
+-- 직속상관의 사원번호 앞 두자리가 76일 때 : 6666
+-- 직속상관의 사원번호 앞 두자리가 77일 때 : 7777
+-- 직속상관의 사원번호 앞 두자리가 78일 때 : 8888
+-- 그 외 직속상관 사원 번호일 때 : 본래 직속상관 사원번호 그대로 출력
+-- 출력형태) EMPNO, ENAME, MGR, CHG_MGR
+
+-- 내꺼
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR,
+	CASE
+		WHEN e.MGR IS NULL THEN '0000'
+		WHEN SUBSTR(e.MGR, 1, 2) = '75' THEN '5555'
+		WHEN SUBSTR(e.MGR, 1, 2) = '76' THEN '6666'
+		WHEN SUBSTR(e.MGR, 1, 2) = '77' THEN '7777'
+		WHEN SUBSTR(e.MGR, 1, 2) = '78' THEN '8888'
+		ELSE TO_CHAR(e.MGR)
+	END AS CHG_MGR
+FROM
+	EMP e;
+
+-- 강사님꺼
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR,
+	DECODE(SUBSTR(TO_CHAR(NVL(e.MGR, 0)), 1, 2),
+	'0', '0000',
+	'75', '5555',
+	'76', '6666',
+	'77', '7777',
+	'78', '8888',
+	SUBSTR(TO_CHAR(e.MGR), 1)) AS CHG_MGR
+FROM
+	EMP e;
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR,
+	DECODE(SUBSTR(TO_CHAR(e.MGR, 0), 1, 2),
+	NULL, '0000',
+	'75', '5555',
+	'76', '6666',
+	'77', '7777',
+	'78', '8888',
+	SUBSTR(TO_CHAR(e.MGR), 1)) AS CHG_MGR
+FROM
+	EMP e;
+
+/* 하나의 열에 출력 결과를 담는 다중행 함수
+ 	모두 NULL 값 제외하고 연산해줌
+ 	1) sum() : 합
+ 	2) count()
+ 	3) max()
+ 	4) min()
+ 	5) avg()
+ 	
+ 	* ALL 은 중복된 거 포함 할건지 안할 건지의 의미
+*/
+SELECT SUM(e.SAL) FROM EMP e;
+
+-- 중복된 급여는 제외한 합
+SELECT SUM(e.SAL), sum(DISTINCT e.SAL), sum(ALL e.SAL) FROM EMP e;
+
+-- ORA-00937: 단일 그룹의 그룹 함수가 아닙니다 => sum 은 1개만 나오고 e.name 은 다중으로 나와서 그럼
+-- SELECT e.ENAME ,SUM(e.SAL) FROM EMP e 
+
+-- 사원의 수
+SELECT COUNT(e.EMPNO), COUNT(e.COMM), COUNT(ALL e.COMM)
+FROM EMP e;
+
+-- 급여의 최대값과 최소값
+SELECT MAX(e.SAL), MIN(e.SAL)
+FROM EMP e;
+
+-- 10번 부서 사원 중 급여 최대값
+SELECT MAX(e.SAL), MIN(e.SAL)
+FROM EMP e
+WHERE e.DEPTNO = 10;
+
+-- 20번 부서의 입사일 중 최근 입사일 출력
+SELECT MAX(e.HIREDATE), MIN(e.HIREDATE)
+FROM EMP e
+WHERE e.DEPTNO = 10;
+
+-- 부서번호가 30인 사원의 평균 급여
+SELECT AVG(e.SAL)
+FROM EMP e 
+WHERE e.DEPTNO = 30;
