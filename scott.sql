@@ -1071,3 +1071,296 @@ ON
 	e.DEPTNO = d.DEPTNO
 GROUP BY
 	e.DEPTNO, d.DNAME;
+
+-- 서브쿼리
+-- 이름이 JONES 인 사원의 급여보다 높은 급여를 받는 사원 조회
+SELECT e.SAL 
+FROM EMP e 
+WHERE e.ENAME = 'JONES';
+
+-- JONES 보다 많이 받는 사원 조회
+SELECT *
+FROM EMP e 
+WHERE e.SAL > 2975;
+
+-- 서브쿼리로 변경
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	e.SAL > (
+	SELECT
+		e.SAL
+	FROM
+		EMP e
+	WHERE
+		e.ENAME = 'JONES');
+
+-- ALLEN 보다 빨리 입사한 사원 조회
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	e.HIREDATE < (
+	SELECT
+		e.HIREDATE
+	FROM
+		EMP e
+	WHERE
+		e.ENAME = 'ALLEN')
+
+-- 20번 부서에 속한 사원 중 전체 사원의 평균 급여보다 높은 급여를 받은 사원정보(사번, 이름, 직무, 급여)
+-- 소속부서정보(부서번호, 부서명, 부서위치) 조회
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	d.DEPTNO,
+	d.DNAME,
+	d.LOC
+FROM
+	EMP e
+JOIN DEPT d ON
+	e.DEPTNO = d.DEPTNO
+WHERE
+	e.DEPTNO = 20
+	AND e.SAL > (
+	SELECT
+		AVG(e.SAL)
+	FROM
+		EMP e);
+		
+-- 전체사원의 평균급여보다 적거나 같은 급여를 받는 20번 부서 정보 조회
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	d.DEPTNO,
+	d.DNAME,
+	d.LOC
+FROM
+	EMP e
+JOIN DEPT d ON
+	e.DEPTNO = d.DEPTNO
+WHERE
+	e.DEPTNO = 20
+	AND e.SAL <= (
+	SELECT
+		AVG(e.SAL)
+	FROM
+		EMP e);
+
+-- 다중행 서브쿼리
+-- 부서별 최고급여와 같은 급여를 받는 사원 조회
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	e.SAL IN (
+	SELECT
+		MAX(e.SAL)
+	FROM
+		EMP e
+	GROUP BY
+		e.DEPTNO);
+
+-- ANY, SOME
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	e.SAL = ANY (
+	SELECT
+		MAX(e.SAL)
+	FROM
+		EMP e
+	GROUP BY
+		e.DEPTNO);
+
+-- < ANY , < SOME
+-- 30번 부서의 (최대)급여보다 적은 급여를 받는 사원조회 (다중행)
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	e.SAL < ANY (
+	SELECT
+		e.SAL
+	FROM
+		EMP e
+	WHERE
+		e.DEPTNO = 30)
+ORDER BY
+	e.SAL,
+	e.EMPNO;
+
+-- 30번 부서의 (최대)급여보다 적은 급여를 받는 사원조회 (단일행)
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	e.SAL < (
+	SELECT
+		MAX(e.SAL)
+	FROM
+		EMP e
+	WHERE
+		e.DEPTNO = 30)
+ORDER BY
+	e.SAL,
+	e.EMPNO;
+
+-- 30번 부서의 (최소)급여보다 적은 급여를 받는 사원조회 (다중행)
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	e.SAL < ALL (
+	SELECT
+		e.SAL
+	FROM
+		EMP e
+	WHERE
+		e.DEPTNO = 30);
+
+-- 30번 부서의 (최소)급여보다 적은 급여를 받는 사원조회 (단일행)
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	e.SAL < (
+	SELECT
+		MIN(e.SAL)
+	FROM
+		EMP e
+	WHERE
+		e.DEPTNO = 30);
+
+-- EXISTS
+SELECT * FROM EMP e WHERE EXISTS (SELECT d.DNAME FROM DEPT d WHERE d.DEPTNO = 10);
+
+SELECT * FROM EMP e WHERE EXISTS (SELECT d.DNAME FROM DEPT d WHERE d.DEPTNO = 50);
+
+-- 비교할 열이 여러개인 다중열 서브쿼리
+-- 부서별 최대급여와 같은 급여를 받는 사원조회
+SELECT
+	*
+FROM
+	EMP e
+WHERE
+	(e.DEPTNO,
+	e.SAL) IN (
+	SELECT
+		e.DEPTNO,
+		MAX(e.SAL)
+	FROM
+		EMP e
+	GROUP BY
+		e.DEPTNO);
+
+-- SELECT 절에 사용하는 서브쿼리(결과가 반드시 하나만 반환)
+-- 사원정보, 급여등급, 부서명 조회 => 조인 or 서브쿼리
+SELECT
+	e.EMPNO,
+	e.JOB,
+	e.SAL,
+	(
+	SELECT
+		s.GRADE
+	FROM
+		SALGRADE s
+	WHERE
+		e.SAL BETWEEN s.LOSAL AND s.HISAL ) AS SALGRADE,
+	e.DEPTNO,
+	(
+	SELECT
+		d.DNAME
+	FROM
+		DEPT d
+	WHERE
+		e.DEPTNO = d.DEPTNO ) AS DNAME
+FROM
+	EMP e ;
+
+-- 10 번 부서에 근무하는 사원 중 30번 부서에 없는 직책인 사원의 사원 정보(사번, 이름, 직무, 부서정보(부서번호, 부서명, 위치)) 조회
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.DEPTNO,
+	d.DNAME,
+	d.LOC
+FROM
+	EMP e
+JOIN DEPT d ON
+	e.DEPTNO = d.DEPTNO
+WHERE
+	e.JOB NOT IN (
+	SELECT
+		e.JOB
+	FROM
+		EMP e
+	WHERE
+		e.DEPTNO = 30)
+	AND e.DEPTNO = 10;
+
+
+-- 직책이 SALESMAN인 사람의 최고급여보다 많이 받는 사람의 사원정보, 급여등급정보를 조회
+-- 다중행 함수를 사용하는 방법과 사용하지 않는 방법 2가지로 작성
+-- 출력 : 사번, 이름, 급여, 등급
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.SAL,
+	(
+	SELECT
+		s.GRADE
+	FROM
+		SALGRADE s
+	WHERE
+		e.SAL BETWEEN s.LOSAL AND s.HISAL) AS SALGRADE
+FROM
+	EMP e
+WHERE
+	e.sal > ALL (
+	SELECT
+		MAX(e.SAL)
+	FROM
+		EMP e
+	WHERE
+		e.JOB = 'SALESMAN')
+ORDER BY
+	e.EMPNO
+		
+-- 다중행 사용 X
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.SAL,
+	(
+	SELECT
+		s.GRADE
+	FROM
+		SALGRADE s
+	WHERE
+		e.SAL BETWEEN s.LOSAL AND s.HISAL) AS SALGRADE
+FROM
+	EMP e
+WHERE
+	e.sal > (
+	SELECT
+		MAX(e.SAL)
+	FROM
+		EMP e
+	WHERE
+		e.JOB = 'SALESMAN')
+ORDER BY
+	e.EMPNO
