@@ -15,7 +15,7 @@
 	* SALGRADE(급여테이블)
 	* grade(급여 등급), losal(최저급여), hisal(최대급여)
 
-	* 개발자 : CR(read)UD
+	* 개발자 : C(insert)R(read)U(update)D(delete)
 	* SQL(Structured Query Language : 구조질의언어) : RDBMS 데이터를 다루는 언어
  	 ㄴ 모든 RDBMS에서 사용 가능한 표준화된 언어
 
@@ -24,6 +24,8 @@
 		① FROM => ② WHERE => ③ SELECT => ④ ORDER by
 		
 	* XE 버전 한글의 바이트 수 : 3byte
+	* 
+<< R (READ) >>
 
  << 연산자 >>
  	1) 산술연산자 : +, -, *, /
@@ -152,6 +154,8 @@
  		9. 조인 (join)
  			=> 여러 종류의 데이터를 다양한 테이블에 나누어 저장하기 때문에 여러 테이블의 데이터를 조합하여 출력할 때가 많다.
  			   이 때 사용하는 방식이 조인(join)
+ 			   
+ 			   * 특이한 조인 : hr(230번 줄) 참고
  
  			- 종류
  				1) 내부조인(inner join) : 연결이 안되는 데이터는 제외
@@ -213,4 +217,63 @@
  				3) 다중열 서브쿼리 : 서브쿼리의 SELECT 절에 비교할 데이터를 여러개 지정
  					=> 2개의 서브쿼리 값을 뽑으면 본문의 찾는 값도 2개를 뽑아야 함 (비교대상 일치)
  		
+<< C (INSERT) >> : 삽입
+	참고 : scott(1368)
+	
+	- 복사
+		1) 기존테이블 복사 후 새 테이블로 생성
+			=> CREATE TABLE 테이블명 AS SELECT * FROM 복사대상;
+			
+		2) 열구조만 복사 후 새 테이블 생성
+			=> CREATE TABLE 테이블명 AS SELECT * FROM 복사대상 WHERE 1<>1;
+			
+	- 삽입
+		- 기본형태 => 기준 : 필드명
+			INSERT INTO 테이블명(필드명, 필드명, ....)
+ 			VALUES(값1, 값2...)
+ 			
+ 				=> 필드명과 값의 개수가 같아야 작성이 됨
+ 				=> Number 인 경우 자릿수에 맞게 입력해야 함
+ 				=> 컬럼의 개수가 모자르게 (필드명)을 쓰고 값을 입력하면 null 로 삽입 됨
+ 					=> 필드명 생략은 테이블의 현재 열 순서대로 나열되었다고 가정하고 데이터 처리
+ 					=> properties의 Not Null 에 체크가 안 되어있어야 가능
+ 					
+ 				* 날짜데이터 삽입
+ 				=> '' <- 필수
+ 				=> YYYY-MM-DD or YYYY/MM/DD
+ 				 				
+ 		- SELECT 구문의 형태
+ 				INSERT INTO 테이블명(필드명, 필드명, ....)
+ 				SELECT 문
+ 					=> VALUES 대신 사용
+ 			
+<< U (UPDATE) >>
+	참고 : scott(1422)
+	
+	- 기본형태
+		UPDATE 테이블명
+		SET 변경할 열 = 값, 변경할 열 = 값...
+		WHERE 데이터를 변경할 대상 행을 선별하는 조건 나열
+			
+			=> WHERE 절이 없으면 해당 열의 값이 모두 변경이 되기 때문에 조심해야 함
+
+<< D (DELETE) >>
+	참고 : 1442
+	
+	- 기본형태
+		1) DELETE FROM 테이블명
+		   WHERE 삭제할 조건
+		
+		2) DELETE 테이블명
+		   WHERE 삭제할 조건
+		   		
+		   		=> FROM 은 선택
+		   		=> WHERE 절이 없으면 해당 테이블의 값이 모두 삭제 되기 때문에 조심해야 함
+		   		
+-- 40번 부서의 부서명,위치 변경
+-- dept 테이블 40번 부서랑 동일
+UPDATE DEPT_TEMP
+SET (DNAME, LOC) = (SELECT DNAME, LOC FROM DEPT WHERE DEPTNO = 40)
+WHERE DEPTNO = 40;
+ 	
 */
