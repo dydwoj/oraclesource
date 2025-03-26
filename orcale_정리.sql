@@ -219,14 +219,7 @@
  		
 << C (INSERT) >> : 삽입
 	참고 : scott(1368)
-	
-	- 복사
-		1) 기존테이블 복사 후 새 테이블로 생성
-			=> CREATE TABLE 테이블명 AS SELECT * FROM 복사대상;
-			
-		2) 열구조만 복사 후 새 테이블 생성
-			=> CREATE TABLE 테이블명 AS SELECT * FROM 복사대상 WHERE 1<>1;
-			
+		
 	- 삽입
 		- 기본형태 => 기준 : 필드명
 			INSERT INTO 테이블명(필드명, 필드명, ....)
@@ -258,7 +251,7 @@
 			=> WHERE 절이 없으면 해당 열의 값이 모두 변경이 되기 때문에 조심해야 함
 
 << D (DELETE) >>
-	참고 : 1442
+	참고 : scott(1442)
 	
 	- 기본형태
 		1) DELETE FROM 테이블명
@@ -269,11 +262,116 @@
 		   		
 		   		=> FROM 은 선택
 		   		=> WHERE 절이 없으면 해당 테이블의 값이 모두 삭제 되기 때문에 조심해야 함
-		   		
--- 40번 부서의 부서명,위치 변경
--- dept 테이블 40번 부서랑 동일
-UPDATE DEPT_TEMP
-SET (DNAME, LOC) = (SELECT DNAME, LOC FROM DEPT WHERE DEPTNO = 40)
-WHERE DEPTNO = 40;
- 	
+ 
+<< 트랜잭션 >> : ALL(전부 실행) or NOTHING(전부 취소)
+	참고 : scott(1527)
+	
+	- DML(데이터 조작어) 일 때만 일어남
+		1) INSERT
+		2) UPDATE
+		3) DELETE
+		
+		* Auto Commit : 커밋 자동 실행
+		
+		- COMMIT : 전부 실행
+			=> 구문 실행 후 진짜 실행 => COMMIT
+		- ROLLBACK : 전부 취소
+			=> 구문 실행 후 전부 취소 => ROLLBACK
+
+		- 세션
+			=> 데이터베이스 접속 후 작업을 수행한 후 접속을 종료하기까지 전체 기간
+	
+			*dbeaver 에서 커밋을 안한 실행상태에서 SQL plus 에서 똑같은 작업을 수행하면 => Lock
+				=> 커밋을 하는지 롤백을 하는지 모르는 상태기에 Lock 을 검
+			
+	- DDL(데이터 정의어) : 객체(테이블)를 생성, 변경, 삭제
+	
+			* ROLLBACK 개념 X
+			** 테이블명 규칙 
+				1. 문자로 시작 (영문자, 한글, 숫자 가능)
+				2. 테이블 이름은 30byte 이하
+				3. 같은 사용자 안에서는 테이블명 중복 불가
+				4. SQL 예약어는 테이블 이름으로 사용 금지
+					* 예약어 : SELECT, FROM 등...
+
+		1) CREATE : 테이블 생성
+			- 작성
+				CREATE TABLE 테이블명(
+					컬럼명1 자료형, 
+					컬럼명2 자료형, 
+					컬럼명3 자료형
+					)
+				- 복사
+					1) 기존테이블 구조와 데이터를 복사 후 새 테이블 생성
+						=> CREATE TABLE 테이블명 AS SELECT * FROM 복사대상;
+			
+					2) 기존테이블의 구조(열)만 복사 후 새 테이블 생성
+						=> CREATE TABLE 테이블명 AS SELECT * FROM 복사대상 WHERE 1<>1;
+						
+		2) ALTER : 테이블 변경 => 열 관련만
+			1) 열 추가
+				- 작성
+					ALTER TABLE 테이블명 ADD 컬럼명 자료형
+			2) 열 이름 변경
+				- 작성
+					ALTER TABLE 테이블명 RENAME COLUMN 기존컬럼명 바꿀컬럼명;
+			3) 열 자료형 변경
+				- 작성
+					ALTER TABLE 테이블명 MODIFY 컬럼명 자료형(바꿀 값);
+				* ORA-01440: 정도 또는 자리수를 축소할 열은 비어 있어야 합니다
+					=> 자료가 이미 공간을 차지한 상태에서 자료값 보다 길이를 줄이면 에러남
+			4) 특정 열 삭제
+				- 작성
+					ALTER TABLE 테이블명 DROP COLUMN 컬럼명;
+					
+		3) DROP : 테이블 삭제
+			- 작성
+				DROP TABLE 테이블명;
+				
+		4) TRUNCATE : 테이블 전체 데이터 삭제
+			- 작성
+				1) DELETE FROM 테이블명;
+					=> ROLLBACK 가능
+				2) TRUNCATE TABLE 테이블명;
+					=> ROLLBACK 안됨
+					
+		5) RENAME : 테이블 이름 변경
+			- 작성
+				RENAME 기존테이블명 TO 바꿀테이블명;
+		
+<< 오라클 객체(테이블) >>
+	참고 : scott(1622), ststem.sql(21)
+	
+	1) 오라클 데이터베이스 테이블
+		1. 사용자 테이블
+		2. 데이터 사전 : 일반 사용자가 접근하는 곳은 아님
+			=> 중요한 데이터(사용자, 권한, 메모리, 성능 등...)
+			=> USER_*, ALL_*, DBA_, V$_*
+			=> 사용하는 경우가 흔치 않음
+			
+	2) 인덱스 : 검색을 빠르게 처리
+		1. FULL SCAN
+		2) INDEX SCAN
+		
+		- 인덱스 생성
+			CREATE INDEX 인덱스명 ON 테이블명(열이름 ASC OR DESC, 열 이름....);
+	
+		- 인덱스 삭제
+			 DROP INDEX 인덱스명
+			 
+	3) VIEW : 가상테이블
+		=> 실제 물리적으로 저장된 테이블이 아님
+		=> 아무나 생성 불가 => 권한을 가진 사람만 생성가능
+		
+		- 사용이유
+			1) 보안성 : 특정 열을 노출하고 싶지 않을 때
+			2) 편리성 : SELECT 문의 복잡도 완화	
+		
+		- 권한부여
+			GRANT CREATE VIEW TO 사용자명;
+		
+		- 생성
+			CREATE VIEW 뷰이름(열이름1, 열이름2 ...) AS (저장할 SELECT 구문)
+			
+			
 */
